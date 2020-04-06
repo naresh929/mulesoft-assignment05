@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="77bf0301-a6ee-4ce1-b80b-e25e68163ce7" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="muletransformation" doc:id="9cdb4371-4e7a-4b38-bd08-da39f9fb13f4" >
+		<http:listener doc:name="mule transformation" doc:id="eef452ac-b990-49eb-b960-98f1c8f4a141" config-ref="HTTP_Listener_config" path="/transformation"/>
+		<ee:transform doc:name="Transform Message" doc:id="37b3b6c7-553b-4290-84d9-2f6b93c0c9ee" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/json
+var mapTransform = ["jose", "pedro", "mateo"] map (value, index) -> { (index) : value}
+var mapObjTransform = {"a":"b","c":"d"} mapObject (value,key,index) -> { (index) : { (value):key} }
+var flatttenObj = flatten([[1,2,3],[4,5,6],[7,8,9]])
+var joinByObj = ["a","b","c"] joinBy  "-"
+var dateObj = now()
+var stringObj = "this is new string"
+fun addition(data1,data2) = data1+data2
+---
+{
+	map:mapTransform,
+	mapObject:mapObjTransform,
+	flatten:flatttenObj,
+	joinBy:joinByObj,
+	date:dateObj as Date{format:"d-MMM-yy"},
+	string:capitalize(stringObj),
+	sum:addition(2,3)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="csvtransform" doc:id="f4253d3f-2783-4d4b-b90d-cbb310ce01a6" >
+		<http:listener doc:name="Listener" doc:id="31407428-3d99-49af-a882-d8871a30eaec" config-ref="HTTP_Listener_config" path="/csvtransform" outputMimeType="application/csv" allowedMethods="GET"/>
+		<ee:transform doc:name="Transform Message" doc:id="970d97dd-6b84-4de8-98b9-16f37af90443" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    "DISPLAY_VALUE": "Select One",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "Select One",
+    "RANK": 0,
+    "ID": 3
+  },
+  {
+    "DISPLAY_VALUE": "Abu Dhabi",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "AB",
+    "RANK": 1,
+    "ID": 17832
+  },
+  {
+    "DISPLAY_VALUE": "Dubai",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "DU",
+    "RANK": 1,
+    "ID": 17833
+  }
+  ]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="5b70b90a-aceb-4066-abbe-cc408bede5db" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+flatten(payload) map ((record, index) -> 
+    {
+        alternateHierarchy: record.COUNTRY_CODE,
+        tablePath: record.DISPLAY_VALUE         
+    }
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="xmltransformation" doc:id="85f8382e-ffdc-4365-8c63-b3c86d956293" >
+		<http:listener doc:name="xml transformation" doc:id="28fc7aa5-7701-4ac4-9133-134c4a8ed487" config-ref="HTTP_Listener_config" path="/xmltransform"/>
+		<ee:transform doc:name="Transform Message" doc:id="36b7831d-539d-4a54-a7e1-11f934914ba1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    "DISPLAY_VALUE": "Select One",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "Select One",
+    "RANK": 0,
+    "ID": 3
+  },
+  {
+    "DISPLAY_VALUE": "Abu Dhabi",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "AB",
+    "RANK": 1,
+    "ID": 17832
+  },
+  {
+    "DISPLAY_VALUE": "Dubai",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "DU",
+    "RANK": 1,
+    "ID": 17833
+  }
+  ]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="4ed2f128-2124-41b1-a61f-b552d6c9c0e2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+---
+{
+	countries:{
+		(payload map ((item, index) -> {
+			country:{
+				display_name:item.DISPLAY_VALUE,
+				country_code:item.COUNTRY_CODE,
+				lang_code:item.LANG_CODE
+			}
+		}))
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="flatfiletransformation" doc:id="0f4edd61-1e77-4bd0-8733-bc975b646362" >
+		<http:listener doc:name="flat file transform" doc:id="2027831b-fb71-45c9-9ecf-f1b8a2d99da2" config-ref="HTTP_Listener_config" path="/flatfiletransform"/>
+		<ee:transform doc:name="Transform Message" doc:id="a78df379-ce4e-4e91-add5-f549da156bb8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    "DISPLAY_VALUE": "Select One",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "Select One",
+    "RANK": 0,
+    "ID": 3
+  },
+  {
+    "DISPLAY_VALUE": "Abu Dhabi",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "AB",
+    "RANK": 1,
+    "ID": 17832
+  },
+  {
+    "DISPLAY_VALUE": "Dubai",
+    "COUNTRY_CODE": "AE",
+    "LANG_CODE": null,
+    "SAP_VALUE": "DU",
+    "RANK": 1,
+    "ID": 17833
+  }
+  ]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="604bf606-320f-4f9c-9a8e-725a61c4cd6d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/flatfile
+---
+{
+	Header:{
+		country_code:String,
+		display_name:String
+	},
+	Data:(payload) map ((item, index) -> {
+		country_code:item.COUNTRY_CODE,
+		display_name:item.DISPLAY_VALUE
+	})
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
